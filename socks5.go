@@ -154,8 +154,9 @@ func (s *Server) ServeConn(conn net.Conn) error {
 		return fmt.Errorf("Failed to read destination address: %v", err)
 	}
 	request.AuthContext = authContext
-	if client, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
-		request.RemoteAddr = &AddrSpec{IP: client.IP, Port: client.Port}
+	ip, port, err := parseAddr(conn.RemoteAddr())
+	if err != nil {
+		request.RemoteAddr = &AddrSpec{IP: ip, Port: port}
 	}
 
 	// Process the client request

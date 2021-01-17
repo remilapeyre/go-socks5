@@ -34,7 +34,10 @@ func TestSOCKS5_Connect(t *testing.T) {
 		}
 		conn.Write([]byte("pong"))
 	}()
-	lAddr := l.Addr().(*net.TCPAddr)
+	_, p, err := parseAddr(l.Addr())
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
 
 	// Create a socks server
 	creds := StaticCredentials{
@@ -72,7 +75,7 @@ func TestSOCKS5_Connect(t *testing.T) {
 	req.Write([]byte{5, 1, 0, 1, 127, 0, 0, 1})
 
 	port := []byte{0, 0}
-	binary.BigEndian.PutUint16(port, uint16(lAddr.Port))
+	binary.BigEndian.PutUint16(port, uint16(p))
 	req.Write(port)
 
 	// Send a ping

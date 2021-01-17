@@ -191,8 +191,11 @@ func (s *Server) handleConnect(ctx context.Context, conn conn, req *Request) err
 	defer target.Close()
 
 	// Send success
-	local := target.LocalAddr().(*net.TCPAddr)
-	bind := AddrSpec{IP: local.IP, Port: local.Port}
+	ip, port, err := parseAddr(target.LocalAddr())
+	if err != nil {
+		return fmt.Errorf("Failed to parse addr: %v", err)
+	}
+	bind := AddrSpec{IP: ip, Port: port}
 	if err := sendReply(conn, successReply, &bind); err != nil {
 		return fmt.Errorf("Failed to send reply: %v", err)
 	}
@@ -361,4 +364,16 @@ func proxy(dst io.Writer, src io.Reader, errCh chan error) {
 		tcpConn.CloseWrite()
 	}
 	errCh <- err
+}
+
+func parseAddr(addr net.Addr) (net.IP, int, error) {
+	ip, port, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		return net.IP{}, 0, fmt.Errorf("failed to parse addr: %w", err)
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return net.IP{}, 0, fmt.Errorf("failed to parse port: %w", err)
+	}
+	return net.ParseIP(ip), p, nil
 }
